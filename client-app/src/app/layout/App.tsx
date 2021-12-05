@@ -6,38 +6,19 @@ import ActivityDashboard from '../../features/activities/dashboard/ActivityDashb
 import {v4 as uuid} from 'uuid';
 import agent from '../api/agent';
 import Loading from './Loading';
+import useStores from '../stores/stores';
+import { observer } from 'mobx-react-lite';
 
-function App() {
+export default observer(function App() {
 
   const [activities, setActivities] = useState<Activity[]>([]);
-  const [selectedActivity, setSelectedActivity] = useState<Activity | undefined>(undefined);
-  const [editMode, setEditMode] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
+  const {activityStore} = useStores();
+
   useEffect(() =>{
-    agent.requests.activityList().then(data => {
-      setActivities(data);
-      setLoading(false);
-    })
-  }, [])
-
-  function handleSelectActivity (id: string){
-    setSelectedActivity(activities.find(x => x.id === id));
-  }
-
-  function handleCancelSelectActivity(){
-    setSelectedActivity(undefined);
-  }
-
-  function handleFormOpen(id?: string){
-    id ? handleSelectActivity(id) : handleCancelSelectActivity();
-    setEditMode(true);
-  }
-
-  function handleFormClose(){
-    setEditMode(false);
-  }
+    activityStore.loadActivities();
+  }, [activityStore])
 
   function handleSubmitActivity(activity: Activity){
     setSubmitting(true);
@@ -45,8 +26,8 @@ function App() {
       agent.requests.updateActivity(activity).then(() => {
         setActivities([...activities.filter( x => x.id !== activity.id), activity]);
         setSubmitting(false);
-        setEditMode(false); 
-        setSelectedActivity(activity);
+        //setEditMode(false); 
+        //setSelectedActivity(activity);
       })
     }
     else{
@@ -54,8 +35,8 @@ function App() {
       agent.requests.createActivity(activity).then(() => {
         setActivities([...activities, {...activity}]);
         setSubmitting(false);
-        setEditMode(false); 
-        setSelectedActivity(activity);
+        //setEditMode(false); 
+        //setSelectedActivity(activity);
       })
     }
   }
@@ -68,21 +49,14 @@ function App() {
     })
   }
 
-  if(loading) return <Loading/>
+  if(activityStore.loadingInit) return <Loading/>
 
   return (
 
     <>
-      <NavBar openForm={handleFormOpen}/>
+      <NavBar/>
       <Container style={{marginTop: '7em'}}>
         <ActivityDashboard 
-          activities={activities} 
-          selectedActivity={selectedActivity} 
-          selectActivity={handleSelectActivity} 
-          cancelSelectActivity={handleCancelSelectActivity} 
-          editMode={editMode}
-          openForm={handleFormOpen}
-          closeForm={handleFormClose}
           submitActivity={handleSubmitActivity}
           deleteActivity={handleDeleteActivity}
           submitting={submitting}
@@ -90,6 +64,4 @@ function App() {
       </Container>
     </>
   );
-}
-
-export default App;
+})
