@@ -1,23 +1,30 @@
-import { action, makeAutoObservable, observable } from "mobx";
+import {makeAutoObservable } from "mobx";
 import { Activity } from "../models/activity";
 import agent from '../api/agent';
+import {v4 as uuid} from 'uuid';
 
 export default class ActivityStore{
-
-    activities: Activity[] = [];
+    activityRegistry = new Map<string, Activity>();
     selectedActivity: Activity | undefined = undefined;
-    loadingInit = false; 
+    loadingInit = true; 
     editMode = false;
+    submitting = false;
 
     constructor(){
         makeAutoObservable(this)
     }
 
+    getActivitiesByDateTime = () => {
+        return Array.from(this.activityRegistry.values())
+            .sort((a, b) => Date.parse(a.date) - Date.parse(b.date));
+    }
+
     loadActivities = () => {
-        this.setLoadingInit(true);
         try {
             agent.requests.activityList().then(data => {
-                this.activities = data
+                data.forEach(activity => {
+                    this.activityRegistry.set(activity.id, activity);
+                })
                 this.setLoadingInit(false);
             })
         } catch (error) {
@@ -31,7 +38,7 @@ export default class ActivityStore{
     }
 
     selectActivity = (id: string) => {
-        this.selectedActivity = this.activities.find(x => x.id === id);
+        this.selectedActivity = this.activityRegistry.get(id);
     }
 
     cancelSelectActivity = () => {
@@ -45,5 +52,35 @@ export default class ActivityStore{
 
     closeForm = () => {
         this.editMode = false;
+    }
+
+    submitActivity = (activity: Activity) => {
+        this.submitting = true;
+        if(activity.id){
+            agent.requests.updateActivity(activity).then(() => {
+              this.activityRegistry.set(activity.id, activity);
+              this.submitting = false;
+              this.editMode = false;
+              this.selectActivity(activity.id);
+            })
+        }
+          else{
+            activity.id = uuid();
+            agent.requests.createActivity(activity).then(() => {
+              this.activityRegistry.set(activity.id, activity);
+              this.submitting = false;
+              this.editMode = false;
+              this.selectActivity(activity.id);
+            })
+        }
+    }
+
+    deleteActivity = (id: string) => {
+        this.submitting = true;
+        agent.requests.deleteActivity(id).then(() => {
+            this.activityRegistry.delete(id);
+            this.submitting = false;
+            if(this.selectedActivity?.id === id) this.cancelSelectActivity();
+        })
     }
 }
