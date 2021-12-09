@@ -1,4 +1,4 @@
-import {makeAutoObservable } from "mobx";
+import {makeAutoObservable, runInAction } from "mobx";
 import { Activity } from "../models/activity";
 import agent from '../api/agent';
 import {v4 as uuid} from 'uuid';
@@ -6,8 +6,6 @@ import {v4 as uuid} from 'uuid';
 export default class ActivityStore{
     activityRegistry = new Map<string, Activity>();
     selectedActivity: Activity | undefined = undefined;
-    loadingInit = true; 
-    editMode = false;
     submitting = false;
 
     constructor(){
@@ -23,64 +21,73 @@ export default class ActivityStore{
         try {
             agent.requests.activityList().then(data => {
                 data.forEach(activity => {
-                    this.activityRegistry.set(activity.id, activity);
+                    activity.date = activity.date.split('T')[0];
+                    runInAction(()=>{
+                        this.activityRegistry.set(activity.id, activity);
+                    })
                 })
-                this.setLoadingInit(false);
             })
         } catch (error) {
             console.log(error);
-            this.setLoadingInit(false);
         }
     }
 
-    setLoadingInit = (state: boolean) => {
-        this.loadingInit = state;
+    loadActivityDetail = async (id: string) => {
+        var activity = this.activityRegistry.get(id);
+        if(activity){
+            this.selectActivity(activity);
+            return activity;
+        }
+        else{
+            var data = await agent.requests.activityDetails(id);
+            data.date = data.date.split('T')[0];
+            this.selectActivity(data);
+            return data;
+        }
     }
 
-    selectActivity = (id: string) => {
-        this.selectedActivity = this.activityRegistry.get(id);
+    selectActivity = (activity: Activity) => {
+        this.selectedActivity = activity;
     }
 
     cancelSelectActivity = () => {
-        this.selectedActivity = undefined;
+        runInAction(() => {
+            this.selectedActivity = undefined;
+        })
     }
 
-    openForm = (id?: string) => {
-        id ? this.selectActivity(id) : this.cancelSelectActivity();
-        this.editMode = true;
-    }
-
-    closeForm = () => {
-        this.editMode = false;
-    }
-
-    submitActivity = (activity: Activity) => {
+    submitActivity = async (activity: Activity) => {
         this.submitting = true;
         if(activity.id){
-            agent.requests.updateActivity(activity).then(() => {
-              this.activityRegistry.set(activity.id, activity);
-              this.submitting = false;
-              this.editMode = false;
-              this.selectActivity(activity.id);
+            await agent.requests.updateActivity(activity);
+            this.activityRegistry.set(activity.id, activity);
+            this.selectActivity(activity);
+            runInAction(() =>{
+                this.submitting = false;
             })
+            return;
         }
-          else{
+        else{
             activity.id = uuid();
-            agent.requests.createActivity(activity).then(() => {
-              this.activityRegistry.set(activity.id, activity);
-              this.submitting = false;
-              this.editMode = false;
-              this.selectActivity(activity.id);
+            await agent.requests.createActivity(activity);
+            this.activityRegistry.set(activity.id, activity);
+            this.selectActivity(activity);
+            runInAction(() =>{
+                this.submitting = false;
             })
+            return;
         }
     }
 
     deleteActivity = (id: string) => {
-        this.submitting = true;
+        runInAction(() =>{
+            this.submitting = true;
+        })
         agent.requests.deleteActivity(id).then(() => {
-            this.activityRegistry.delete(id);
-            this.submitting = false;
-            if(this.selectedActivity?.id === id) this.cancelSelectActivity();
+            runInAction(() =>{
+                this.activityRegistry.delete(id);
+                this.submitting = false;
+            })
         })
     }
 }
