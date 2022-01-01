@@ -1,4 +1,5 @@
-﻿using AutoMapper;
+﻿using Application.Core;
+using AutoMapper;
 using Domain;
 using MediatR;
 using Persistence;
@@ -13,12 +14,12 @@ namespace Application.Activities
 {
     public class Delete
     {
-        public class Command : IRequest
+        public class Command : IRequest<Result<Unit>>
         {
             public Guid Id { get; set; }
         }
 
-        public class Handler : IRequestHandler<Command>
+        public class Handler : IRequestHandler<Command, Result<Unit>>
         {
             private readonly DataContext _context;
 
@@ -27,14 +28,14 @@ namespace Application.Activities
                 _context = context;
             }
 
-            public async Task<Unit> Handle(Command request, CancellationToken cancellationToken)
+            public async Task<Result<Unit>> Handle(Command request, CancellationToken cancellationToken)
             {
                 var activity = _context.Activities.Find(request.Id);
 
                 _context.Activities.Remove(activity);
-                await _context.SaveChangesAsync();
 
-                return Unit.Value;
+                var isSuccess = await _context.SaveChangesAsync() > 0;
+                return isSuccess ? Result<Unit>.Success(Unit.Value) : Result<Unit>.Failure("Failed to delete the activity");
             }
         }
     }

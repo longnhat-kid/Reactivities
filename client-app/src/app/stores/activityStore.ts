@@ -2,11 +2,12 @@ import {makeAutoObservable, runInAction } from "mobx";
 import { Activity } from "../models/activity";
 import agent from '../api/agent';
 import {v4 as uuid} from 'uuid';
+import { format } from "date-fns";
 
 export default class ActivityStore{
     activityRegistry = new Map<string, Activity>();
     selectedActivity: Activity | undefined = undefined;
-    submitting = false;
+    isSubmitting: boolean = false; 
 
     constructor(){
         makeAutoObservable(this)
@@ -14,13 +15,13 @@ export default class ActivityStore{
 
     get activitiesByDate(){
         return Array.from(this.activityRegistry.values())
-            .sort((a, b) => Date.parse(a.date) - Date.parse(b.date));
+            .sort((a, b) => a.date!.getTime() - b.date!.getTime());
     }
 
     get groupedActivities(){
         return Object.entries(
             this.activitiesByDate.reduce((activities, activity) => {
-                const date = activity.date;
+                const date = format(activity.date!, 'dd MMM yyyy');
                 activities[date] = activities[date] ? [...activities[date], activity] : [activity] 
                 return activities;
             }, {} as {[key: string]: Activity[]})
@@ -31,7 +32,7 @@ export default class ActivityStore{
         try {
             const activities = await agent.requests.activityList();
             activities.forEach(activity => {
-                activity.date = activity.date.split('T')[0];
+                activity.date = new Date(activity.date!);
                 runInAction(()=>{
                     this.activityRegistry.set(activity.id, activity);
                 })
@@ -49,7 +50,7 @@ export default class ActivityStore{
         }
         else{
             var data = await agent.requests.activityDetails(id);
-            data.date = data.date.split('T')[0];
+            data.date = new Date(data.date!);
             this.selectActivity(data);
             return data;
         }
@@ -66,14 +67,10 @@ export default class ActivityStore{
     }
 
     submitActivity = async (activity: Activity) => {
-        this.submitting = true;
         if(activity.id){
             await agent.requests.updateActivity(activity);
             this.activityRegistry.set(activity.id, activity);
             this.selectActivity(activity);
-            runInAction(() =>{
-                this.submitting = false;
-            })
             return;
         }
         else{
@@ -81,21 +78,18 @@ export default class ActivityStore{
             await agent.requests.createActivity(activity);
             this.activityRegistry.set(activity.id, activity);
             this.selectActivity(activity);
-            runInAction(() =>{
-                this.submitting = false;
-            })
             return;
         }
     }
 
     deleteActivity = (id: string) => {
         runInAction(() =>{
-            this.submitting = true;
+            this.isSubmitting = true;
         })
         agent.requests.deleteActivity(id).then(() => {
             runInAction(() =>{
                 this.activityRegistry.delete(id);
-                this.submitting = false;
+                this.isSubmitting = false;
             })
         })
     }

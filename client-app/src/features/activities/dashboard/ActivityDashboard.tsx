@@ -13,7 +13,7 @@ export default observer(function ActivityDashboard(){
         activityStore.loadActivities();
     }, [activityStore])
 
-  if(!activityStore.activityRegistry.size) return <Loading/>
+  if(activityStore.activityRegistry.size <= 1) return <Loading/>
     return(
         <Grid>
             <Grid.Column width='10'>

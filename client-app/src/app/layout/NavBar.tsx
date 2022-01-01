@@ -16,6 +16,7 @@ export default function NavBar(){
                 <Menu.Item >
                     <Button onClick={() => activityStore.cancelSelectActivity()} as={NavLink} to='/creating' positive content = "Create Activity"/>
                 </Menu.Item>
+                <Menu.Item as={NavLink} to='/errors' name = "Errors"/>
             </Container>
         </Menu>
     )
