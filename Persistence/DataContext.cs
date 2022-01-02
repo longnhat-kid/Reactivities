@@ -1,4 +1,5 @@
 ﻿using Domain;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -8,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Persistence
 {
-    public class DataContext : DbContext
+    public class DataContext : IdentityDbContext<UserApp>
     {
         public DataContext(DbContextOptions options) : base(options)
         {
@@ -18,3 +19,5 @@ namespace Persistence
 
     }
 }
+
+// dotnet ef migrations add [table name] -p [project contain data context] -s [startup project]
