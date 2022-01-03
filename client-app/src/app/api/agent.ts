@@ -2,6 +2,7 @@ import axios, {AxiosResponse, AxiosError} from 'axios';
 import { toast } from 'react-toastify';
 import { history } from '../..';
 import { Activity } from '../models/activity';
+import { User, UserForm } from '../models/user';
 import { stores } from '../stores/stores';
 
 axios.defaults.baseURL = 'http://localhost:5000/api';
@@ -14,12 +15,18 @@ const sleep = (delay: number) => {
     })
 }
 
+axios.interceptors.request.use(config => {
+    if(stores.commonStore.token){
+        config.headers!.Authorization = `Bearer ${stores.commonStore.token}`; 
+    }
+    return config;
+})
+
 axios.interceptors.response.use(async response => {
     await sleep(2000);
     return response;
 }, (error: AxiosError) => {
     const {data, status, config} = error.response!;
-    console.log(error.response);
     switch (status) {
         case 400:
             if(typeof data === 'string') {
@@ -61,7 +68,7 @@ const actions = {
     delete: <T> (url: string) => axios.delete<T>(url).then(responseBody)
 }
 
-const requests = {
+const activities = {
     activityList: () => actions.get<Activity[]>('/activities'),
     activityDetails: (id: string) => actions.get<Activity>(`/activities/${id}`),
     createActivity: (activity: Activity) => actions.post<void>('/activities', activity),
@@ -69,8 +76,15 @@ const requests = {
     deleteActivity: (id: string) => actions.delete<void>(`/activities/${id}`)
 }
 
+const users = {
+    current: () => actions.get<User>('/account'),
+    login: (user: UserForm) => actions.post<User>('account/login', user),
+    register: (user: UserForm) => actions.post<User>('account/register', user)
+}
+
 const agent = {
-    requests
+    activities,
+    users
 }
 
 export default agent

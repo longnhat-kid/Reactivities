@@ -30,7 +30,7 @@ export default class ActivityStore{
 
     loadActivities = async () => {
         try {
-            const activities = await agent.requests.activityList();
+            const activities = await agent.activities.activityList();
             activities.forEach(activity => {
                 activity.date = new Date(activity.date!);
                 runInAction(()=>{
@@ -49,7 +49,7 @@ export default class ActivityStore{
             return activity;
         }
         else{
-            var data = await agent.requests.activityDetails(id);
+            var data = await agent.activities.activityDetails(id);
             data.date = new Date(data.date!);
             this.selectActivity(data);
             return data;
@@ -68,14 +68,14 @@ export default class ActivityStore{
 
     submitActivity = async (activity: Activity) => {
         if(activity.id){
-            await agent.requests.updateActivity(activity);
+            await agent.activities.updateActivity(activity);
             this.activityRegistry.set(activity.id, activity);
             this.selectActivity(activity);
             return;
         }
         else{
             activity.id = uuid();
-            await agent.requests.createActivity(activity);
+            await agent.activities.createActivity(activity);
             this.activityRegistry.set(activity.id, activity);
             this.selectActivity(activity);
             return;
@@ -86,7 +86,7 @@ export default class ActivityStore{
         runInAction(() =>{
             this.isSubmitting = true;
         })
-        agent.requests.deleteActivity(id).then(() => {
+        agent.activities.deleteActivity(id).then(() => {
             runInAction(() =>{
                 this.activityRegistry.delete(id);
                 this.isSubmitting = false;

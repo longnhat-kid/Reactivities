@@ -52,11 +52,13 @@ namespace API.Controllers
         {
             if(await _userManager.Users.AnyAsync(u => u.Email == registerDto.Email))
             {
-                return BadRequest("Email already existed !");
+                ModelState.AddModelError("email", "Email already existed !");
+                return ValidationProblem();
             }
             if (await _userManager.Users.AnyAsync(u => u.UserName == registerDto.UserName))
             {
-                return BadRequest("UserName already existed !");
+                ModelState.AddModelError("username", "Username ready existed !");
+                return ValidationProblem();
             }
 
             var user = new UserApp
@@ -73,7 +75,8 @@ namespace API.Controllers
                 return CreateUserDTOObject(user);
             }
 
-            return BadRequest("Problem occured in register process !");
+            ModelState.AddModelError("problem", "Problem occured in register process !");
+            return ValidationProblem();
         }
 
         [HttpGet]
