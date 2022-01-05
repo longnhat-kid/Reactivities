@@ -21,11 +21,11 @@ namespace API.Controllers
     [Route("api/[controller]")]
     public class AccountController : ControllerBase
     {
-        private readonly UserManager<UserApp> _userManager;
-        private readonly SignInManager<UserApp> _signInManager;
+        private readonly UserManager<AppUser> _userManager;
+        private readonly SignInManager<AppUser> _signInManager;
         private readonly TokenService _tokenService;
 
-        public AccountController(UserManager<UserApp> userManager, SignInManager<UserApp> signInManager, TokenService tokenService)
+        public AccountController(UserManager<AppUser> userManager, SignInManager<AppUser> signInManager, TokenService tokenService)
         {
             _userManager = userManager;
             _signInManager = signInManager;
@@ -61,7 +61,7 @@ namespace API.Controllers
                 return ValidationProblem();
             }
 
-            var user = new UserApp
+            var user = new AppUser
             {
                 DisplayName = registerDto.DisplayName,
                 Email = registerDto.Email,
@@ -87,7 +87,7 @@ namespace API.Controllers
         }
 
         #region Helper Method
-        private UserDTO CreateUserDTOObject(UserApp user)
+        private UserDTO CreateUserDTOObject(AppUser user)
         {
             return new UserDTO
             {

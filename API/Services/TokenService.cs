@@ -18,13 +18,13 @@ namespace API.Services
             _config = config;
         }
 
-        public string CreateToken(UserApp userApp)
+        public string CreateToken(AppUser appUser)
         {
             var clams = new List<Claim>()
             {
-                new Claim(ClaimTypes.Name, userApp.UserName),
-                new Claim(ClaimTypes.NameIdentifier, userApp.Id),
-                new Claim(ClaimTypes.Email, userApp.Email)
+                new Claim(ClaimTypes.Name, appUser.UserName),
+                new Claim(ClaimTypes.NameIdentifier, appUser.Id),
+                new Claim(ClaimTypes.Email, appUser.Email)
             };
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["TokenKey"]));

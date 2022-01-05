@@ -1,6 +1,8 @@
 ﻿using API.Services;
 using Domain;
+using Infrastructure.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,12 +16,12 @@ namespace API.Extensions
     {
         public static IServiceCollection AddIdentityServices(this IServiceCollection services, IConfiguration config)
         {
-            services.AddIdentityCore<UserApp>(opt =>
+            services.AddIdentityCore<AppUser>(opt =>
             {
                 opt.Password.RequireNonAlphanumeric = false;
             })
             .AddEntityFrameworkStores<DataContext>()
-            .AddSignInManager<SignInManager<UserApp>>();
+            .AddSignInManager<SignInManager<AppUser>>();
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["TokenKey"]));
 
@@ -34,6 +36,17 @@ namespace API.Extensions
                         ValidateAudience = false
                     };
                 });
+
+            services.AddAuthorization(config =>
+            {
+                config.AddPolicy("IsActivityHost", policy =>
+                {
+                    policy.AddRequirements(new IsHostRequirement());
+                });
+            });
+
+            services.AddTransient<IAuthorizationHandler, IHostRequirementHandler>();
+
             services.AddScoped<TokenService>();
             return services;
         }
