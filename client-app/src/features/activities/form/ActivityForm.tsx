@@ -11,22 +11,14 @@ import MyTextArea from '../../../app/common/form/MyTextArea';
 import MySelectInput from '../../../app/common/form/MySelectInput';
 import { categoryOptions } from '../../../app/common/options/categoryOptions';
 import MyDatePicker from '../../../app/common/form/MyDatePicker';
-import { Activity } from '../../../app/models/activity';
+import { ActivityFormValues } from '../../../app/models/activity';
 import { history } from '../../..';
 
 export default observer(function ActivityForm(){
     const {activityStore} = useStores();
     const {id} = useParams<{id: string}>();
-    const initialState = {
-        id: '',
-        title: '',
-        date: null,
-        description: '',
-        category: '',
-        city: '',
-        venue: ''
-    };
-    const [activity, setActivity] = useState<Activity>(initialState);
+
+    const [activity, setActivity] = useState<ActivityFormValues>(new ActivityFormValues());
 
     const validationSchema = Yup.object({
         title: Yup.string().required('The activity title is required !'),
@@ -37,7 +29,7 @@ export default observer(function ActivityForm(){
         date: Yup.date().nullable().required('The activity date is required !')
     })
 
-    function handleFormSubmit(activity: Activity) {
+    function handleFormSubmit(activity: ActivityFormValues) {
         activityStore.submitActivity(activity).then(() => {
             history.push(`/details/${activityStore.selectedActivity!.id}`)
         });
@@ -47,7 +39,7 @@ export default observer(function ActivityForm(){
     useEffect(() => {
         if(id){
             activityStore.loadActivityDetail(id).then((activity) => {
-                setActivity(activity)
+                setActivity(new ActivityFormValues(activity))
             })
         }
     }, [activityStore, id])
