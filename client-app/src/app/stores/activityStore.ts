@@ -4,7 +4,7 @@ import agent from '../api/agent';
 import {v4 as uuid} from 'uuid';
 import { format } from "date-fns";
 import { stores } from "./stores";
-import { Profile } from "../models/profile";
+import { Profiles } from "../models/profiles";
 
 export default class ActivityStore{
     activityRegistry = new Map<string, Activity>();
@@ -89,7 +89,7 @@ export default class ActivityStore{
         else{
             newActivity.id = uuid();
             await agent.activities.createActivity(activity);
-            var attendee = new Profile(user!);
+            var attendee = new Profiles(user!);
             newActivity.hostUserName = user!.userName;
             newActivity.attendees = [attendee];
             this.setActivity(newActivity);
@@ -122,7 +122,7 @@ export default class ActivityStore{
                 });
             }
             else{
-                var attendee = new Profile(user!);
+                var attendee = new Profiles(user!);
                 runInAction(() => {
                     this.selectedActivity?.attendees?.push(attendee);
                     this.selectedActivity!.isGoing = true

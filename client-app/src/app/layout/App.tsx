@@ -15,6 +15,7 @@ import LoginForm from '../../features/users/LoginForm';
 import useStores from '../stores/stores';
 import Loading from './Loading';
 import ModalContainer from '../common/modals/ModalContainer';
+import ProfilesPage from '../../features/profiles/ProfilesPage';
 
 export default observer(function App() {
 
@@ -47,6 +48,7 @@ export default observer(function App() {
                 <Route path='/activities' component={ActivityDashboard}/>
                 <Route key={location.key} path={['/creating', '/updating/:id']} component={ActivityForm}/>
                 <Route path='/details/:id' component={ActivityDetails}/>
+                <Route path='/profiles/:username' component={ProfilesPage}/>
                 <Route path='/errors' component={TestErrors}/>
                 <Route path='/server-error' component={ServerError}/>
                 <Route path='/login' component={LoginForm}/>

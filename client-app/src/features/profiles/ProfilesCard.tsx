@@ -1,18 +1,18 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card, Icon, Image } from 'semantic-ui-react';
-import { Profile } from '../../app/models/profile';
+import { Profiles } from '../../app/models/profiles';
 
 interface Props {
-    profile: Profile;
+    profiles: Profiles;
 }
 
-export default function ProfileCard({profile}: Props){
+export default function ProfilesCard({profiles}: Props){
     return (
-        <Card as={Link} to={`/profile/${profile.userName}`}>
-            <Image src={profile.image || '/assets/user.png'}/>
+        <Card as={Link} to={`/profiles/${profiles.userName}`}>
+            <Image size='medium' wrapped ui={true} src={profiles.mainPhoto || '/assets/user.png'}/>
             <Card.Content>
-                <Card.Header>{profile.displayName}</Card.Header>
+                <Card.Header>{profiles.displayName}</Card.Header>
                 <Card.Description>Bio goes here</Card.Description>
             </Card.Content>
             <Card.Content extra>

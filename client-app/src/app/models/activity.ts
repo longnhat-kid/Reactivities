@@ -1,4 +1,4 @@
-import { Profile } from "./profile";
+import { Profiles } from "./profiles";
 
 export interface Activity {
     id: string;
@@ -9,11 +9,11 @@ export interface Activity {
     city: string;
     venue: string;
     hostUserName: string;
-    host?: Profile;
+    host?: Profiles;
     isCancelled: boolean;
     isGoing: boolean;
     isHost: boolean;
-    attendees: Profile[]
+    attendees: Profiles[]
 }
 
 export class Activity implements Activity{

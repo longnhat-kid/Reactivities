@@ -13,6 +13,7 @@ using API.DTOs;
 using API.Services;
 using Microsoft.AspNetCore.Authorization;
 using System.Security.Claims;
+using System.Linq;
 
 namespace API.Controllers
 {
@@ -35,7 +36,10 @@ namespace API.Controllers
         [HttpPost("login")]
         public async Task<ActionResult<UserDTO>> Login(LoginDTO loginDto)
         {
-            var user = await _userManager.FindByEmailAsync(loginDto.Email);
+            //var user = await _userManager.FindByEmailAsync(loginDto.Email);
+            var user = await _userManager.Users
+                .Include(u => u.Photos)
+                .FirstOrDefaultAsync(u => u.Email == loginDto.Email);
             if(user == null) return Unauthorized();
 
             var result = await _signInManager.CheckPasswordSignInAsync(user, loginDto.Password, false);
@@ -82,7 +86,10 @@ namespace API.Controllers
         [HttpGet]
         public async Task<ActionResult<UserDTO>> GetCurrentUser()
         {
-            var user = await _userManager.FindByEmailAsync(User.FindFirstValue(ClaimTypes.Email));
+            var user = await _userManager.Users
+                .Include(u => u.Photos)
+                .FirstOrDefaultAsync(u => u.Email == User.FindFirstValue(ClaimTypes.Email));
+
             return CreateUserDTOObject(user);
         }
 
@@ -92,7 +99,7 @@ namespace API.Controllers
             return new UserDTO
             {
                 DisplayName = user.DisplayName,
-                Image = null,
+                MainPhoto = user.Photos?.FirstOrDefault(p => p.IsMain)?.Url,
                 UserName = user.UserName,
                 Token = _tokenService.CreateToken(user)
             };

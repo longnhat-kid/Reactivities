@@ -18,6 +18,6 @@ namespace Application.DTOs.Activities
         public string Venue { get; set; }
         public string HostUserName { get; set; }
         public bool IsCancelled { get; set; }
-        public ICollection<Profile> Attendees { get; set; }
+        public ICollection<AttendeeDTO> Attendees { get; set; }
     }
 }

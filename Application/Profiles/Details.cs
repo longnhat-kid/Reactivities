@@ -1,8 +1,6 @@
 ﻿using Application.Core;
-using Application.DTOs.Activities;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
-using Domain;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Persistence;
@@ -13,16 +11,16 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Application.Activities
+namespace Application.Profiles
 {
-    public class List
+    public class Details
     {
-        public class Query : IRequest<Result<List<ActivityDTO>>>
+        public class Query : IRequest<Result<Profile>>
         {
-
+            public string UserName { get; set; }
         }
 
-        public class Handler : IRequestHandler<Query, Result<List<ActivityDTO>>>
+        public class Handler : IRequestHandler<Query, Result<Profile>>
         {
             private readonly DataContext _context;
             private readonly IMapper _mapper;
@@ -33,13 +31,13 @@ namespace Application.Activities
                 _mapper = mapper;
             }
 
-            public async Task<Result<List<ActivityDTO>>> Handle(Query request, CancellationToken cancellationToken)
+            public async Task<Result<Profile>> Handle(Query request, CancellationToken cancellationToken)
             {
-                var activities =  await _context.Activities
-                    .ProjectTo<ActivityDTO>(_mapper.ConfigurationProvider)
-                    .ToListAsync();
+                var user = await _context.Users
+                    .ProjectTo<Profile>(_mapper.ConfigurationProvider)
+                    .SingleOrDefaultAsync(u => u.UserName == request.UserName);
 
-                return Result<List<ActivityDTO>>.Success(activities);
+                return Result<Profile>.Success(user);
             }
         }
     }
