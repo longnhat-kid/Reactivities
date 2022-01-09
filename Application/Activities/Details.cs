@@ -1,5 +1,5 @@
 ﻿using Application.Core;
-using Application.DTOs.Activities;
+using Application.DTOs;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Domain;

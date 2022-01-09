@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Application.DTOs.Activities
+namespace Application.DTOs
 {
     public class ActivityDTO
     {

@@ -2,7 +2,6 @@
 using Application.DTOs;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
-using Domain;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Persistence;
@@ -13,16 +12,15 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Application.Activities
+namespace Application.Comments
 {
     public class List
     {
-        public class Query : IRequest<Result<List<ActivityDTO>>>
-        {
-
+        public class Query : IRequest<Result<List<CommentDTO>>> {
+            public Guid ActivityId { get; set; }
         }
 
-        public class Handler : IRequestHandler<Query, Result<List<ActivityDTO>>>
+        public class Handler : IRequestHandler<Query, Result<List<CommentDTO>>>
         {
             private readonly DataContext _context;
             private readonly IMapper _mapper;
@@ -33,13 +31,15 @@ namespace Application.Activities
                 _mapper = mapper;
             }
 
-            public async Task<Result<List<ActivityDTO>>> Handle(Query request, CancellationToken cancellationToken)
+            public async Task<Result<List<CommentDTO>>> Handle(Query request, CancellationToken cancellationToken)
             {
-                var activities =  await _context.Activities
-                    .ProjectTo<ActivityDTO>(_mapper.ConfigurationProvider)
+                var comments = await _context.Comments
+                    .Where(c => c.Activity.Id == request.ActivityId)
+                    .OrderByDescending(c => c.CreateAt)
+                    .ProjectTo<CommentDTO>(_mapper.ConfigurationProvider)
                     .ToListAsync();
 
-                return Result<List<ActivityDTO>>.Success(activities);
+                return Result<List<CommentDTO>>.Success(comments);
             }
         }
     }

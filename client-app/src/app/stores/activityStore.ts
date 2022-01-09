@@ -9,6 +9,7 @@ import { Profiles } from "../models/profiles";
 export default class ActivityStore{
     activityRegistry = new Map<string, Activity>();
     selectedActivity: Activity | undefined = undefined;
+    isLoading: boolean = true;
     isSubmitting: boolean = false; 
 
     constructor(){
@@ -31,6 +32,7 @@ export default class ActivityStore{
     }
 
     loadActivities = async () => {
+        this.isLoading = true;
         try {
             const activities = await agent.activities.activityList();
             activities.forEach(activity => {
@@ -38,6 +40,8 @@ export default class ActivityStore{
             })
         } catch (error) {
             console.log(error);
+        } finally {
+            runInAction(() => this.isLoading = false);
         }
     }
 
@@ -54,16 +58,14 @@ export default class ActivityStore{
 
     loadActivityDetail = async (id: string) => {
         var activity = this.activityRegistry.get(id);
-        if(activity){
+        if(activity) {
             this.selectActivity(activity);
             return activity;
         }
-        else{
-            var data = await agent.activities.activityDetails(id);
-            this.setActivity(data);
-            this.selectActivity(data);
-            return data;
-        }
+        var data = await agent.activities.activityDetails(id);
+        this.setActivity(data);
+        this.selectActivity(data);
+        return data;
     }
 
     selectActivity = (activity: Activity) => {
@@ -71,16 +73,14 @@ export default class ActivityStore{
     }
 
     cancelSelectActivity = () => {
-        runInAction(() => {
-            this.selectedActivity = undefined;
-        })
+        this.selectedActivity = undefined;
     }
 
     submitActivity = async (activity: ActivityFormValues) => {
         const user = stores.userStore.user;
         var newActivity = new Activity(activity);
         if(activity.id){
-            await agent.activities.updateActivity(activity);
+            await agent.activities.updateActivity(newActivity);
             let updateActivity = {...this.activityRegistry.get(activity.id), ...activity};
             this.activityRegistry.set(updateActivity.id!, updateActivity as Activity);
             this.selectActivity(updateActivity as Activity);
@@ -88,7 +88,7 @@ export default class ActivityStore{
         }
         else{
             newActivity.id = uuid();
-            await agent.activities.createActivity(activity);
+            await agent.activities.createActivity(newActivity);
             var attendee = new Profiles(user!);
             newActivity.hostUserName = user!.userName;
             newActivity.attendees = [attendee];

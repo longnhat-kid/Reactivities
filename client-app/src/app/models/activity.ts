@@ -32,6 +32,14 @@ export class ActivityFormValues{
     date: Date | null = null;
 
     constructor(activity?: Activity) {
-        Object.assign(this, activity);
+        if (activity) {
+            this.id = activity.id;
+            this.title = activity.title;
+            this.category = activity.category;
+            this.description = activity.description;
+            this.date = activity.date;
+            this.venue = activity.venue;
+            this.city = activity.city;
+          }
     }
 }

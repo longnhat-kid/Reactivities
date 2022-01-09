@@ -12,9 +12,14 @@ import ActivityDetailsSidebar from './ActivityDetailsSidebar';
 
 export default observer(function ActivityDetails(){
     const {activityStore} = useStores();
-    const {selectedActivity} = activityStore;
+    const {selectedActivity, cancelSelectActivity} = activityStore;
     const {id} = useParams<{id: string}>();
-    useEffect(()=> {activityStore.loadActivityDetail(id)},[activityStore, id]);
+    useEffect(()=> {
+        if(id){
+            activityStore.loadActivityDetail(id);
+        }
+        return () => cancelSelectActivity();
+    },[activityStore, id, cancelSelectActivity]);
 
     if(!selectedActivity) return <Loading content = 'Loading select activity...'/>
 

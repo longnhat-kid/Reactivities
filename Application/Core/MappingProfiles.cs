@@ -1,5 +1,5 @@
 ﻿using Application.Activities;
-using Application.DTOs.Activities;
+using Application.DTOs;
 using AutoMapper;
 using Domain;
 using System;
@@ -15,6 +15,7 @@ namespace Application.Core
         public MappingProfiles()
         {
             CreateMap<Activity, Activity>();
+
             CreateMap<Activity, ActivityDTO>()
                 .ForMember(x => x.HostUserName, opt => opt.MapFrom(a => a.Attendees
                     .FirstOrDefault(aa => aa.IsHost).AppUser.UserName));
@@ -26,6 +27,12 @@ namespace Application.Core
 
             CreateMap<AppUser, Profiles.Profile>()
                 .ForMember(x => x.MainPhoto, opt => opt.MapFrom(u => u.Photos.FirstOrDefault(p => p.IsMain).Url));
+
+            CreateMap<Comment, CommentDTO>()
+                .ForMember(co => co.UserName, opt => opt.MapFrom(c => c.Author.UserName))
+                .ForMember(co => co.DisplayName, opt => opt.MapFrom(c => c.Author.DisplayName))
+                .ForMember(co => co.Photo, opt => opt.MapFrom(c => c.Author.Photos.FirstOrDefault(p => p.IsMain).Url));
+
         }
     }
 }
