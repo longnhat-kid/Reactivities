@@ -18,7 +18,7 @@ export default observer(function ProfilesPage(){
     }, [profilesStore, getProfiles, username])
 
     if(isLoading) return <Loading content = 'Loading profiles...'/>
-
+    
     return (
         <Grid>
             <Grid.Column width="16">

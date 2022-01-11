@@ -13,5 +13,8 @@ namespace Application.DTOs
         public string DisplayName { get; set; }
         public string Bio { get; set; }
         public string MainPhoto { get; set; }
+        public bool isFollowing { get; set; }
+        public int FollowersCount { get; set; }
+        public int FollowingsCount { get; set; }
     }
 }
