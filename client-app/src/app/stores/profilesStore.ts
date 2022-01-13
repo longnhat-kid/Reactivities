@@ -1,18 +1,22 @@
 import { makeAutoObservable, reaction, runInAction } from "mobx";
 import agent from "../api/agent";
+import { UserActivity } from "../models/activity";
 import { Photo, Profiles } from "../models/profiles";
 import { stores } from "./stores";
 
 export default class ProfilesStore{
     profiles: Profiles | null = null;
     follows: Profiles[] = []; 
+    activityRegistry = new Map<string, UserActivity>();
     isLoading: boolean = false;
     isUpload: boolean = false;
     isSetMain: boolean = false;
     isDeleting: boolean = false;
     isFollowing: boolean = false;
     loadingFollows: boolean = false;
+    loadingUserActivities: boolean = false;
     activeTab: number = 0;
+    activeEventMenu: string = 'future';
 
     constructor(){
         makeAutoObservable(this);
@@ -20,15 +24,58 @@ export default class ProfilesStore{
         reaction(
             () => this.activeTab,
             (activeTab) => {
-                if(activeTab === 3 || activeTab ===4){
+                if(activeTab === 3 || activeTab === 4){
                     const predicate = activeTab === 3 ? 'followers' : 'followings';
                     this.loadListFollows(predicate);
                 }
+                if(activeTab === 2){
+                    this.activityRegistry.clear();
+                    this.loadUserActivities(this.activeEventMenu);
+                }
                 else{
+                    this.activityRegistry.clear();
                     this.follows = [];
                 }
             }
         )
+
+        reaction(
+            () => this.activeEventMenu,
+            (activeEventMenu) => {
+                this.activityRegistry.clear();
+                this.loadUserActivities(activeEventMenu);
+            }
+        )
+    }
+
+    setActiveEventMenu = (activeMenu: string) => {
+        this.activeEventMenu = activeMenu;
+    }
+
+    get activitiesByDate(){
+        return Array.from(this.activityRegistry.values())
+            .sort((a, b) => a.date!.getTime() - b.date!.getTime());
+    }
+
+    loadUserActivities = async (predicate: string) => {
+        this.loadingUserActivities = true;
+        this.activityRegistry.clear();
+        try {
+            var result = await agent.profiles.loadUserActivities(this.profiles!.userName, predicate);
+            runInAction(() =>{
+                result.forEach(activity => {
+                    activity.date = new Date(activity.date!);
+                    runInAction(() =>{
+                        this.activityRegistry.set(activity.id, activity);
+                    })
+                });
+            })
+            
+        } catch (error) {
+            console.log(error);
+        } finally{
+            runInAction(() =>  this.loadingUserActivities = false);
+        }
     }
 
     setActiveTab = (activeTab: any) => {

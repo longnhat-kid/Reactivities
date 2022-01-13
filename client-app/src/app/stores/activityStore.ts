@@ -1,19 +1,69 @@
-import {makeAutoObservable, runInAction } from "mobx";
+import {makeAutoObservable, reaction, runInAction } from "mobx";
 import { Activity, ActivityFormValues } from "../models/activity";
 import agent from '../api/agent';
 import {v4 as uuid} from 'uuid';
 import { format } from "date-fns";
 import { stores } from "./stores";
 import { Profiles } from "../models/profiles";
+import { Pagination, PagingParams } from "../models/pagination";
 
 export default class ActivityStore{
     activityRegistry = new Map<string, Activity>();
     selectedActivity: Activity | undefined = undefined;
     isLoading: boolean = true;
     isSubmitting: boolean = false; 
+    pagination: Pagination | null = null;
+    pagingParams = new PagingParams();
+    predicate = new Map().set('all', true);
 
     constructor(){
         makeAutoObservable(this)
+
+        reaction(
+            () => this.predicate.keys(),
+            () => {
+                this.pagingParams = new PagingParams();
+                this.activityRegistry.clear();
+                this.loadActivities();
+            }
+        )
+    }
+
+    setPredicate = (key: string, value: string | Date) => {
+        const resetPredicate = () => {
+            this.predicate.forEach((value, key) => {
+                if (key !== 'startDate') this.predicate.delete(key);
+            })
+        }
+        if(['all', 'isGoing', 'isHost'].includes(key)){
+            resetPredicate();
+            this.predicate.set(key, true);
+        }
+        if(key === 'startDate'){
+            this.predicate.delete('startDate');
+            this.predicate.set('startDate', value);
+        }
+    }
+
+    setPagingParams = (pagingParams: PagingParams) => {
+        this.pagingParams = pagingParams;
+    }
+
+    get axiosPagingParams(){
+        const params = new URLSearchParams();
+        params.append('pageNumber', this.pagingParams.pageNumber.toString());
+        params.append('pageSize', this.pagingParams.pageSize.toString());
+
+        this.predicate.forEach((value, key) => {
+            if(key === 'startDate'){
+                params.append(key, (value as Date).toISOString());
+            }
+            else{
+                params.append(key, value);
+            }
+        })
+
+        return params;
     }
 
     get activitiesByDate(){
@@ -34,15 +84,20 @@ export default class ActivityStore{
     loadActivities = async () => {
         this.isLoading = true;
         try {
-            const activities = await agent.activities.activityList();
-            activities.forEach(activity => {
+            const result = await agent.activities.activityList(this.axiosPagingParams);
+            result.data.forEach(activity => {
                 this.setActivity(activity);
             })
+            this.setPagination(result.pagination);
         } catch (error) {
             console.log(error);
         } finally {
             runInAction(() => this.isLoading = false);
         }
+    }
+
+    setPagination = (pagination: Pagination) => {
+        this.pagination = pagination;
     }
 
     private setActivity = (activity: Activity) => {

@@ -18,12 +18,12 @@ namespace Application.Activities
 {
     public class List
     {
-        public class Query : IRequest<Result<List<ActivityDTO>>>
+        public class Query : IRequest<Result<PagedList<ActivityDTO>>>
         {
-
+            public ActivityParams ActivityParams { get; set; }
         }
 
-        public class Handler : IRequestHandler<Query, Result<List<ActivityDTO>>>
+        public class Handler : IRequestHandler<Query, Result<PagedList<ActivityDTO>>>
         {
             private readonly DataContext _context;
             private readonly IMapper _mapper;
@@ -36,13 +36,27 @@ namespace Application.Activities
                 _userAccessor = userAccessor;
             }
 
-            public async Task<Result<List<ActivityDTO>>> Handle(Query request, CancellationToken cancellationToken)
+            public async Task<Result<PagedList<ActivityDTO>>> Handle(Query request, CancellationToken cancellationToken)
             {
-                var activities =  await _context.Activities
-                    .ProjectTo<ActivityDTO>(_mapper.ConfigurationProvider, new {currentUserName = _userAccessor.GetUserName()})
-                    .ToListAsync();
+                var query = _context.Activities
+                    .Where(a => a.Date >= request.ActivityParams.StartDate)
+                    .OrderBy(a => a.Date)
+                    .ProjectTo<ActivityDTO>(_mapper.ConfigurationProvider, new { currentUserName = _userAccessor.GetUserName() })
+                    .AsQueryable();
 
-                return Result<List<ActivityDTO>>.Success(activities);
+                if(request.ActivityParams.IsGoing && !request.ActivityParams.IsHost)
+                {
+                    query = query.Where(a => a.Attendees.Any(x => x.UserName == _userAccessor.GetUserName()));
+                }
+
+                if(request.ActivityParams.IsHost && !request.ActivityParams.IsGoing)
+                {
+                    query = query.Where(a => a.HostUserName == _userAccessor.GetUserName());
+                }
+
+                var result = await PagedList<ActivityDTO>.CreateAsync(query, request.ActivityParams.PageNumber, request.ActivityParams.PageSize);
+
+                return Result<PagedList<ActivityDTO>>.Success(result);
             }
         }
     }

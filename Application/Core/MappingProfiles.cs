@@ -22,6 +22,13 @@ namespace Application.Core
                 .ForMember(x => x.HostUserName, opt => opt.MapFrom(a => a.Attendees
                     .FirstOrDefault(aa => aa.IsHost).AppUser.UserName));
 
+            CreateMap<ActivityAttendee, UserActivityDTO>()
+                .ForMember(x => x.Id, opt => opt.MapFrom(a => a.ActivityId))
+                .ForMember(x => x.Title, opt => opt.MapFrom(a => a.Activity.Title))
+                .ForMember(x => x.Category, opt => opt.MapFrom(a => a.Activity.Category))
+                .ForMember(x => x.Date, opt => opt.MapFrom(a => a.Activity.Date))
+                .ForMember(x => x.HostUserName, opt => opt.MapFrom(a => a.Activity.Attendees.FirstOrDefault(z => z.IsHost).AppUser.UserName));
+
             CreateMap<ActivityAttendee, AttendeeDTO>()
                 .ForMember(x => x.DisplayName, opt => opt.MapFrom(aa => aa.AppUser.DisplayName))
                 .ForMember(x => x.UserName, opt => opt.MapFrom(aa => aa.AppUser.UserName))

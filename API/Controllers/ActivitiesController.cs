@@ -9,16 +9,17 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Threading;
 using Microsoft.AspNetCore.Authorization;
+using Application.Core;
 
 namespace API.Controllers
 {
     public class ActivitiesController : BaseApiController
     {
         [HttpGet]
-        public async Task<IActionResult> GetActivityList()
+        public async Task<IActionResult> GetActivityList([FromQuery] ActivityParams activityParams)
         {
-            var result = await Mediator.Send(new List.Query());
-            return HandleResult(result);
+            var result = await Mediator.Send(new List.Query() { ActivityParams = activityParams });
+            return HandlePagedResult(result);
         }
 
         [HttpGet("{id}")]

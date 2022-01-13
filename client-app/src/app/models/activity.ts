@@ -16,6 +16,13 @@ export interface Activity {
     attendees: Profiles[]
 }
 
+export interface UserActivity{
+    id: string;
+    title: string;
+    date: Date | null;
+    category: string;
+}
+
 export class Activity implements Activity{
     constructor(init: ActivityFormValues){
         Object.assign(this, init);
