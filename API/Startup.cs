@@ -40,7 +40,7 @@ namespace API
                 .FontSources(s => s.Self().CustomSources("https://fonts.gstatic.com", "data:"))
                 .FormActions(s => s.Self())
                 .FrameAncestors(s => s.Self())
-                .ImageSources(s => s.Self().CustomSources("https://res.cloudinary.com", "https://reactivities-kid.herokuapp.com"))
+                .ImageSources(s => s.Self().CustomSources("https://res.cloudinary.com", "blob:"))
                 .ScriptSources(s => s.Self().CustomSources("sha256-xLHrhGY/k1lHHI+5RNhuni4uG05CdB4qXvtCyY6RRNc="))
             );
 
