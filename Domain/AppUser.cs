@@ -13,7 +13,8 @@ namespace Domain
         public string Bio { get; set; }
         public ICollection<ActivityAttendee> Activities { get; set; } = new List<ActivityAttendee>();
         public ICollection<Photo> Photos { get; set; } = new List<Photo>();
-        public ICollection<UserFollow> Followers = new List<UserFollow>();
-        public ICollection<UserFollow> Followings = new List<UserFollow>();
+        public ICollection<UserFollow> Followers { get; set; } = new List<UserFollow>();
+        public ICollection<UserFollow> Followings { get; set; } = new List<UserFollow>();
+        public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
     }
 }

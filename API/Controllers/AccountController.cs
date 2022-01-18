@@ -17,10 +17,10 @@ using System.Linq;
 using System.Net.Http;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
+using Microsoft.AspNetCore.Http;
 
 namespace API.Controllers
 {
-    [AllowAnonymous]
     [ApiController]
     [Route("api/[controller]")]
     public class AccountController : ControllerBase
@@ -43,24 +43,28 @@ namespace API.Controllers
             };
         }
 
+        [AllowAnonymous]
         [HttpPost("login")]
         public async Task<ActionResult<UserDTO>> Login(LoginDTO loginDto)
         {
             //var user = await _userManager.FindByEmailAsync(loginDto.Email);
             var user = await _userManager.Users
                 .Include(u => u.Photos)
+                .Include(u => u.RefreshTokens)
                 .FirstOrDefaultAsync(u => u.Email == loginDto.Email);
             if(user == null) return Unauthorized();
 
             var result = await _signInManager.CheckPasswordSignInAsync(user, loginDto.Password, false);
             if (result.Succeeded)
             {
+                await SetRefreshToken(user);
                 return CreateUserDTOObject(user);
             }
 
             return Unauthorized();
         }
 
+        [AllowAnonymous]
         [HttpPost("register")]
         public async Task<ActionResult<UserDTO>> Register(RegisterDTO registerDto)
         {
@@ -86,6 +90,7 @@ namespace API.Controllers
 
             if (result.Succeeded)
             {
+                await SetRefreshToken(user);
                 return CreateUserDTOObject(user);
             }
 
@@ -93,6 +98,7 @@ namespace API.Controllers
             return ValidationProblem();
         }
 
+        [AllowAnonymous]
         [HttpPost("fbLogin")]
         public async Task<ActionResult<UserDTO>> FacebookLogin(string accessToken)
         {
@@ -109,7 +115,7 @@ namespace API.Controllers
             var fbInfo = JsonConvert.DeserializeObject<dynamic>(content);
 
             var username = (string)fbInfo.id;
-            var user = await _userManager.Users.Include(u => u.Photos).FirstOrDefaultAsync(u => u.UserName == username);
+            var user = await _userManager.Users.Include(u => u.Photos).Include(u => u.RefreshTokens).FirstOrDefaultAsync(u => u.UserName == username);
             if(user != null) return CreateUserDTOObject(user);
 
             user = new AppUser
@@ -124,15 +130,33 @@ namespace API.Controllers
 
             if (!result.Succeeded) return BadRequest("Problem with creating account");
 
+            await SetRefreshToken(user);
             return CreateUserDTOObject(user);
         }
 
+        [Authorize]
         [HttpGet]
         public async Task<ActionResult<UserDTO>> GetCurrentUser()
         {
             var user = await _userManager.Users
                 .Include(u => u.Photos)
                 .FirstOrDefaultAsync(u => u.Email == User.FindFirstValue(ClaimTypes.Email));
+
+            await SetRefreshToken(user);
+            return CreateUserDTOObject(user);
+        }
+
+        [Authorize]
+        [HttpPost("refreshToken")]
+        public async Task<ActionResult<UserDTO>> RefreshToken()
+        {
+            var refreshToken = Request.Cookies["refreshToken"];
+
+            var user = await _userManager.Users.Include(u => u.Photos).Include(u => u.RefreshTokens).FirstOrDefaultAsync(u => u.UserName == User.FindFirstValue(ClaimTypes.Name));
+            if(user == null) return Unauthorized();
+
+            var oldToken = user.RefreshTokens.FirstOrDefault(r => r.Token == refreshToken);
+            if (oldToken != null && !oldToken.IsActive) return Unauthorized();
 
             return CreateUserDTOObject(user);
         }
@@ -148,6 +172,29 @@ namespace API.Controllers
                 Token = _tokenService.CreateToken(user)
             };
         }
+
+        private async Task SetRefreshToken(AppUser user)
+        {
+            var refreshToken = _tokenService.GenerateRefreshToken();
+
+            var oldToken = user.RefreshTokens.FirstOrDefault(r => r.IsActive);
+            if (oldToken != null)
+            {
+                oldToken.Revoked = DateTime.UtcNow;
+            }
+
+            user.RefreshTokens.Add(refreshToken);
+            await _userManager.UpdateAsync(user);
+
+            var cookieOptions = new CookieOptions
+            {
+                HttpOnly = true,
+                Expires = DateTime.UtcNow.AddDays(7),
+            };
+
+            Response.Cookies.Append("refreshToken", refreshToken.Token, cookieOptions);
+        }
+
         #endregion
     }
 }

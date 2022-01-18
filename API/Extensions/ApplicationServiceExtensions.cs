@@ -76,6 +76,7 @@ namespace API.Extensions
                     .AllowAnyMethod()
                     .AllowAnyHeader()
                     .AllowCredentials()
+                    .WithExposedHeaders("Pagination", "WWW-Authenticate")
                     .WithOrigins("http://localhost:3000", "https://localhost:3000");
             }));
             services.AddMediatR(typeof(List.Handler).Assembly);
