@@ -27,7 +27,7 @@ export default observer(function App() {
       userStore.getCurrentUser().finally(() => commonStore.setAppLoaded());
     }
     else{
-      commonStore.setAppLoaded();
+      userStore.getFacebookLoginStatus().then(() => commonStore.setAppLoaded());
     }
   }, [commonStore, userStore]);
 

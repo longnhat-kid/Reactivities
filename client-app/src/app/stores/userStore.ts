@@ -5,7 +5,9 @@ import { User, UserForm } from "../models/user";
 import { stores } from "./stores";
 
 export default class UserStore{
-    user: User | null = null
+    user: User | null = null;
+    fbAccessToken: string | null = null;
+    fbLoading: boolean = false;
 
     constructor(){
         makeAutoObservable(this)
@@ -56,5 +58,39 @@ export default class UserStore{
 
     setPhoto = (photoUrl: string) => {
         this.user!.mainPhoto = photoUrl;
+    }
+
+    getFacebookLoginStatus = async () => {
+        window.FB.getLoginStatus(response => {
+            if(response.status === 'connected'){
+                this.fbAccessToken = response.authResponse.accessToken;
+            }
+        })
+    }
+
+    facebookLogin = () => {
+        this.fbLoading = true;
+        const apiLogin = (accessToken: string) => {
+            agent.users.fbLogin(accessToken).then(user => {
+                stores.commonStore.setToken(user.token);
+                runInAction(() => {
+                    this.user = user;
+                });
+                history.push('/activities');
+            }).catch(error => 
+                console.log(error)
+            ).finally(() => {
+                runInAction(() => this.fbLoading = false)
+            })
+        }
+
+        if(this.fbAccessToken){
+            apiLogin(this.fbAccessToken)
+        }
+        else{
+            window.FB.login(response => 
+                apiLogin(response.authResponse.accessToken),
+            {scope: 'public_profile,email'})
+        }
     }
 }

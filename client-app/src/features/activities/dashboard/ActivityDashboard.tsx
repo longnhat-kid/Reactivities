@@ -1,7 +1,7 @@
 import { observer } from 'mobx-react-lite';
 import React, { useEffect, useState } from 'react';
 import InfiniteScroll from 'react-infinite-scroller';
-import { Grid, Loader } from 'semantic-ui-react';
+import { Grid } from 'semantic-ui-react';
 import { PagingParams } from '../../../app/models/pagination';
 import useStores from '../../../app/stores/stores';
 import ActivityFilters from './ActivityFilters';
@@ -47,7 +47,13 @@ export default observer(function ActivityDashboard(){
                 <ActivityFilters/>
             </Grid.Column>
             <Grid.Column width='10'>
-                <Loader active={loadingNext}/>
+                {loadingNext && (
+                    <>
+                        <ActivityPlaceholder/>
+                        <ActivityPlaceholder/>
+                        <ActivityPlaceholder/>
+                    </>
+                )}
             </Grid.Column>
         </Grid>
     )
