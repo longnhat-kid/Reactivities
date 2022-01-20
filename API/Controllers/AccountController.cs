@@ -18,6 +18,9 @@ using System.Net.Http;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.WebUtilities;
+using System.Text;
+using Infrastructure.Emails;
 
 namespace API.Controllers
 {
@@ -29,14 +32,16 @@ namespace API.Controllers
         private readonly SignInManager<AppUser> _signInManager;
         private readonly TokenService _tokenService;
         private readonly IConfiguration _config;
+        private readonly EmailSender _emailSender;
         private readonly HttpClient _httpClient;
 
-        public AccountController(UserManager<AppUser> userManager, SignInManager<AppUser> signInManager, TokenService tokenService, IConfiguration config)
+        public AccountController(UserManager<AppUser> userManager, SignInManager<AppUser> signInManager, TokenService tokenService, IConfiguration config, EmailSender emailSender)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _tokenService = tokenService;
             _config = config;
+            _emailSender = emailSender;
             _httpClient = new HttpClient
             {
                 BaseAddress = new Uri("https://graph.facebook.com")
@@ -52,7 +57,8 @@ namespace API.Controllers
                 .Include(u => u.Photos)
                 .Include(u => u.RefreshTokens)
                 .FirstOrDefaultAsync(u => u.Email == loginDto.Email);
-            if(user == null) return Unauthorized();
+            if(user == null) return Unauthorized("Invalid email address");
+            if (!user.EmailConfirmed) return Unauthorized("Email not confirmed");
 
             var result = await _signInManager.CheckPasswordSignInAsync(user, loginDto.Password, false);
             if (result.Succeeded)
@@ -61,7 +67,7 @@ namespace API.Controllers
                 return CreateUserDTOObject(user);
             }
 
-            return Unauthorized();
+            return Unauthorized("Invalid password");
         }
 
         [AllowAnonymous]
@@ -88,14 +94,23 @@ namespace API.Controllers
 
             var result = await _userManager.CreateAsync(user, registerDto.Password);
 
-            if (result.Succeeded)
+            if (!result.Succeeded)
             {
-                await SetRefreshToken(user);
-                return CreateUserDTOObject(user);
+                ModelState.AddModelError("problem", "Problem occured in register process !");
+                return ValidationProblem();
             }
 
-            ModelState.AddModelError("problem", "Problem occured in register process !");
-            return ValidationProblem();
+            var origin = Request.Headers["origin"];
+            var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+            token = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+            var verifyUrl = $"{origin}/account/confirmEmail?token={token}&email={user.Email}";
+
+            var message = $"<p>Please click the below link to confirm your email address:</p><p><a href='{verifyUrl}'>Click to confirm email</a></p>";
+
+            await _emailSender.SendEmailAsync(user.Email, "Confirm your email with Reactivities Kid", message);
+
+            return Ok("Register success - please confirm your email");
+
         }
 
         [AllowAnonymous]
@@ -126,12 +141,15 @@ namespace API.Controllers
                 Photos = new List<Photo> { new Photo { Id = $"fb_{(string)fbInfo.id}", Url = (string)fbInfo.picture.data.url, IsMain = true } }
             };
 
+            user.EmailConfirmed = true;
+
             var result = await _userManager.CreateAsync(user);
 
             if (!result.Succeeded) return BadRequest("Problem with creating account");
 
             await SetRefreshToken(user);
             return CreateUserDTOObject(user);
+
         }
 
         [Authorize]
@@ -159,6 +177,40 @@ namespace API.Controllers
             if (oldToken != null && !oldToken.IsActive) return Unauthorized();
 
             return CreateUserDTOObject(user);
+        }
+
+        [AllowAnonymous]
+        [HttpPost("confirmEmail")]
+        public async Task<IActionResult> ConfirmEmail(string token, string userEmail)
+        {
+            var user = await _userManager.FindByEmailAsync(userEmail);
+            if (user == null) return Unauthorized();
+            var decodedTokenBytes = WebEncoders.Base64UrlDecode(token);
+            var decodedToken = Encoding.UTF8.GetString(decodedTokenBytes);
+
+            var result = await _userManager.ConfirmEmailAsync(user, decodedToken);
+            if (!result.Succeeded) return BadRequest("Could not confirm email address");
+
+            return Ok("Email confirmed - you can now login");
+        }
+
+        [AllowAnonymous]
+        [HttpGet("emailConfirmationLink")]
+        public async Task<IActionResult> ResendEmailConfirmationLink(string userEmail)
+        {
+            var user = await _userManager.FindByEmailAsync(userEmail);
+            if(user == null) return Unauthorized();
+
+            var origin = Request.Headers["origin"];
+            var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+            token = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+            var verifyUrl = $"{origin}/account/confirmEmail?token={token}&email={user.Email}";
+
+            var message = $"<p>Please click the below link to confirm your email address:</p><p><a href='{verifyUrl}'>Click to confirm email</a></p>";
+
+            await _emailSender.SendEmailAsync(user.Email, "Confirm your email with Reactivities Kid", message);
+
+            return Ok("Email confirmation link resent");
         }
 
         #region Helper Method

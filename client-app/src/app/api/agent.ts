@@ -93,7 +93,9 @@ const users = {
     login: (user: UserForm) => actions.post<User>('account/login', user),
     register: (user: UserForm) => actions.post<User>('account/register', user),
     fbLogin: (accessToken: string) => actions.post<User>(`account/fbLogin?accessToken=${accessToken}`, {}),
-    refreshToken: () => actions.post<User>("account/refreshToken", {})
+    refreshToken: () => actions.post<User>("account/refreshToken", {}),
+    confirmEmail: (token: string, email: string) => actions.post<void>(`account/confirmEmail?token=${token}&userEmail=${email}`, {}),
+    resendConfirmEmail: (email: string) => actions.get<void>(`account/emailConfirmationLink?userEmail=${email}`)
 }
 
 const profiles = {

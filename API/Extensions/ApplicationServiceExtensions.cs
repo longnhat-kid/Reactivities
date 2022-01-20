@@ -3,6 +3,7 @@ using Application.Activities;
 using Application.Core;
 using Application.Interface;
 using FluentValidation.AspNetCore;
+using Infrastructure.Emails;
 using Infrastructure.Photos;
 using Infrastructure.Security;
 using MediatR;
@@ -83,6 +84,8 @@ namespace API.Extensions
             services.AddAutoMapper(typeof(MappingProfiles).Assembly);
             services.AddScoped<IUserAccessor, UserAccessor>();
             services.AddScoped<IPhotoAccessor, PhotoAccessor>();
+            services.AddScoped<IPhotoAccessor, PhotoAccessor>();
+            services.AddScoped<EmailSender>();
             services.Configure<CloudinarySettings>(config.GetSection("Cloudinary"));
             services.AddSignalR();
 

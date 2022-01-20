@@ -16,6 +16,8 @@ import Loading from './Loading';
 import ModalContainer from '../common/modals/ModalContainer';
 import ProfilesPage from '../../features/profiles/ProfilesPage';
 import PrivateRoute from './PrivateRoute';
+import RegisterSuccess from '../../features/users/RegisterSuccess';
+import ConfirmEmail from '../../features/users/ConfirmEmail';
 
 export default observer(function App() {
 
@@ -49,6 +51,8 @@ export default observer(function App() {
                 <PrivateRoute key={location.key} path={['/creating', '/updating/:id']} component={ActivityForm}/>
                 <PrivateRoute path='/details/:id' component={ActivityDetails}/>
                 <PrivateRoute path='/profiles/:username' component={ProfilesPage}/>
+                <Route path='/account/registerSuccess' component={RegisterSuccess} />
+                <Route path='/account/confirmEmail' component={ConfirmEmail} />
                 <PrivateRoute path='/errors' component={TestErrors}/>
                 <Route path='/server-error' component={ServerError}/>
                 <Route component={NotFound}/>
