@@ -1,5 +1,4 @@
-﻿using API.SignalRHub;
-using Application.Activities;
+﻿using Application.Activities;
 using Application.Core;
 using Application.Interface;
 using FluentValidation.AspNetCore;
@@ -9,12 +8,7 @@ using Infrastructure.Security;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Authorization;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.OpenApi.Models;
-using Persistence;
-using System;
 
 namespace API.Extensions
 {
